@@ -1,0 +1,54 @@
+{{ define "Index" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    {{ template "Style" }}
+</head>
+<body>
+    <div id="main">
+        <div id="form-create-db">
+            <form method="POST" action="create-db">
+                Nome do BD: <input type="text" name="db-name">
+                <input type="submit" value="Cadastrar">
+            </form>
+        </div><br>
+        <div id="table-created-dbs">
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Bancos de dados</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range . }}
+                    <tr>
+                        <td>
+                            <a id="{{ .Name }}" href="use-db?db={{ .Name }}">{{ .Name }}</a>
+                        </td>
+                        <td>
+                            <a href="drop-db?db-name={{ .Name }}" class="drop-db">🗑️</a>
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+<script>
+    url_string = window.location.href;
+    url = new URL(url_string)
+    var db = url.searchParams.get("db");
+    if (db != null) {
+        var row = document.getElementById(db)
+        row.style.fontWeight = "bold";
+        row.style.color = "red";
+    }
+</script>
+</html>
+{{ end }}
