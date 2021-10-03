@@ -43,11 +43,9 @@
 <script>
     url_string = window.location.href;
     url = new URL(url_string)
-    var db = url.searchParams.get("db");
-    if (db != null) {
-        var row = document.getElementById(db)
-        row.style.fontWeight = "bold";
-        row.style.color = "red";
+    var err = url.searchParams.get("err")
+    if (err != null) {
+        alert("Nome inválido! Caracteres aceitos: a-Z, A-Z, 0-9 e _.")
     }
 </script>
 </html>

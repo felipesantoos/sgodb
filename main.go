@@ -18,7 +18,12 @@ type Database struct {
 	Name string
 }
 
-var IsAlphaNumeric = regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString
+// Estrutura das tabelas.
+type Table struct {
+	Name string
+}
+
+var IsAlphaNumeric = regexp.MustCompile(`^[a-zA-Z0-9_]+$`).MatchString
 
 // Conexão com o BD.
 func dbConn() (db *sql.DB) {
@@ -101,14 +106,48 @@ func CreateDB(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func SelectTables(w http.ResponseWriter, currentDB string) {
+	// Abre a conexão.
+	db := dbConn()
+	// Executa o comando SQL.
+	selDB, err := db.Query("SHOW TABLES")
+	// Verifica se houve erros.
+	if err != nil {
+		panic(err.Error())
+	}
+	// Variável que vai ser passada para a próxima página.
+	table := Table{}
+	// Array de tabelas.
+	res := []Table{}
+	// Percorre os dados retornados.
+	for selDB.Next() {
+		// Variável que vai armazenar os nomes das tabelas.
+		var name string
+		// Faz o Scan do SHOW TABLES.
+		err = selDB.Scan(&name)
+		// Verifica se houve erros.
+		if err != nil {
+			panic(err.Error())
+		}
+		// Salva o nome da tabela na struc table.
+		table.Name = name
+		log.Println(table.Name)
+		// Adicionar a tabela no array.
+		res = append(res, table)
+	}
+	var dbAndTbs = []interface{}{currentDB, res}
+	// Vai para outra página.
+	tmpl.ExecuteTemplate(w, "UseDB", dbAndTbs)
+}
+
 // Mudando de BD.
 func UseDB(w http.ResponseWriter, r *http.Request) {
 	log.Println("Mudando de BD...")
 	// Mudando o valor da variável controladora.
 	currentDB = r.URL.Query().Get("db")
 	log.Println(currentDB)
-	// Redirecionando para o Index.
-	http.Redirect(w, r, "/?db="+currentDB, http.StatusMovedPermanently)
+	// Redirecionando para a página do banco de dados.
+	SelectTables(w, currentDB)
 }
 
 // Removendo um BD.
@@ -137,5 +176,5 @@ func main() {
 	http.HandleFunc("/drop-db", DropDB)
 
 	// Inicia o servidor.
-	http.ListenAndServe("localhost:9002", nil)
+	http.ListenAndServe("localhost:9011", nil)
 }
