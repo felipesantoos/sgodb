@@ -1,2 +1,3 @@
 CREATE DATABASE `default`;
 SHOW DATABASES;
+DROP DATABASE `default`;
