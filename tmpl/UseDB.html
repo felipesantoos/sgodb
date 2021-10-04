@@ -8,20 +8,38 @@
     <title>{{ index . 0 }}</title>
 </head>
 <body>
-    <table border="1">
+    <div id="form-create-table">
+        <form method="POST" action="create-table">
+            <input type="hidden" name="db" value="{{ index . 0 }}">
+            Nome da tabela: <input type="text" name="table-name">
+            <input type="submit" value="Cadastrar">
+        </form>
+    </div><br>
+    <table id="{{ index . 0 }}" border="1">
         <thead>
             <tr>
                 <th>Tabelas</th>
+                <th colspan="4">Ações</th>
             </tr>
         </thead>
         <tbody>
             {{ range index . 1 }}
-            <tr>
+            <tr id="{{ .Name }}">
                 <td>{{ .Name }}</td>
+                <td style="text-align: center;">
+                    <span onclick="dropTable(this)" style="cursor: pointer;">🗑️</span>
+                </td>
             </tr>
             {{ end }}
         </tbody>
     </table>
 </body>
+<script>
+    function dropTable(el) {
+        var db = document.getElementsByTagName("table")[0].id;
+        var table = el.parentNode.parentNode.id;
+        window.location.href = `/drop-table?db=${db}&table=${table}`;
+    }
+</script>
 </html>
 {{ end }}

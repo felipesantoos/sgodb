@@ -23,7 +23,7 @@ type Table struct {
 	Name string
 }
 
-var IsAlphaNumeric = regexp.MustCompile(`^[a-zA-Z0-9_]+$`).MatchString
+var IsValid = regexp.MustCompile(`^[a-zA-Z0-9_]+$`).MatchString
 
 // Conexão com o BD.
 func dbConn() (db *sql.DB) {
@@ -90,7 +90,7 @@ func CreateDB(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		// Pega o valor do campo "dbNome" do formulário.
 		dbName := r.FormValue("db-name")
-		if IsAlphaNumeric(dbName) {
+		if IsValid(dbName) {
 			// Executa o comando SQL.
 			_, err := db.Exec("CREATE DATABASE IF NOT EXISTS " + dbName)
 			// Verificar se houver erros.
@@ -104,8 +104,11 @@ func CreateDB(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/?err=invalide-db-name", http.StatusMovedPermanently)
 		}
 	}
+	// Fecha a conexão.
+	defer db.Close()
 }
 
+// Consulta as tabelas do banco selecionado.
 func SelectTables(w http.ResponseWriter, currentDB string) {
 	// Abre a conexão.
 	db := dbConn()
@@ -138,9 +141,11 @@ func SelectTables(w http.ResponseWriter, currentDB string) {
 	var dbAndTbs = []interface{}{currentDB, res}
 	// Vai para outra página.
 	tmpl.ExecuteTemplate(w, "UseDB", dbAndTbs)
+	// Fecha a conexão.
+	defer db.Close()
 }
 
-// Mudando de BD.
+// Muda de BD.
 func UseDB(w http.ResponseWriter, r *http.Request) {
 	log.Println("Mudando de BD...")
 	// Mudando o valor da variável controladora.
@@ -150,19 +155,66 @@ func UseDB(w http.ResponseWriter, r *http.Request) {
 	SelectTables(w, currentDB)
 }
 
-// Removendo um BD.
+// Remove um BD.
 func DropDB(w http.ResponseWriter, r *http.Request) {
 	// Abre a conexão.
 	db := dbConn()
 	// Pegando o nome do banco pela URL.
 	dbName := r.URL.Query().Get("db-name")
 	// Executa comando de remoção.
-	_, err := db.Exec("DROP DATABASE " + dbName)
+	_, err := db.Exec("DROP DATABASE `" + dbName + "`")
 	// Verifica se houve erros.
 	if err != nil {
 		panic(err.Error())
 	}
 	http.Redirect(w, r, "/", http.StatusMovedPermanently)
+	defer db.Close()
+}
+
+// Cria uma tabela.
+func CreateTable(w http.ResponseWriter, r *http.Request) {
+	// Abre a conexão.
+	db := dbConn()
+	// Verifica qual é o método da requisição.
+	if r.Method == "POST" {
+		// Pega os dados do formulário.
+		database := r.FormValue("db")
+		table := r.FormValue("table-name")
+		// Verifica se o nome é válido.
+		if IsValid(table) {
+			// Executa o comando SQL.
+			_, err := db.Exec("CREATE TABLE `" + table + "` (id INT AUTO_INCREMENT NOT NULL PRIMARY KEY)")
+			// Verifica se houve erros.
+			if err != nil {
+				panic(err.Error())
+			}
+			// Redireciona para a página do BD.
+			http.Redirect(w, r, "use-db?db="+database, http.StatusMovedPermanently)
+		} else {
+			log.Println("Nome de tabela inválido!")
+		}
+	}
+	// Fecha a conexão.
+	defer db.Close()
+}
+
+// Remove uma tabela do banco selecionado.
+func DropTable(w http.ResponseWriter, r *http.Request) {
+	log.Println("Apague")
+	// Abre a conexão.
+	db := dbConn()
+	database := r.URL.Query().Get("db")
+	table := r.URL.Query().Get("table")
+	// Executa o comando SQL.
+	_, err := db.Exec("DROP TABLE `" + table + "`")
+	// Verifica se houve erros.
+	if err != nil {
+		panic(err.Error())
+	}
+	// Redireciona para a página do BD.
+	http.Redirect(w, r, "use-db?db="+database, http.StatusMovedPermanently)
+	// Fecha a conexão.
+	defer db.Close()
 }
 
 func main() {
@@ -170,11 +222,19 @@ func main() {
 	log.Println("Server started on: http://localhost:8080")
 
 	// Gerenciamento das URLs.
+	// A URL localhost:8080/ executa a função Index.
 	http.HandleFunc("/", Index)
+	// A URL localhost:8080/create-db executa a função CreateDB.
 	http.HandleFunc("/create-db", CreateDB)
+	// A URL localhost:8080/use-db executa a função UseDB.
 	http.HandleFunc("/use-db", UseDB)
+	// A URL localhost:8080/drop-db executa a função DropDB.
 	http.HandleFunc("/drop-db", DropDB)
+	// A URL localhost:8080/create-table executa a função CreateTable.
+	http.HandleFunc("/create-table", CreateTable)
+	// A URL localhost:8080/drop-table executa a função DropTable.
+	http.HandleFunc("/drop-table", DropTable)
 
 	// Inicia o servidor.
-	http.ListenAndServe("localhost:9011", nil)
+	http.ListenAndServe("localhost:9015", nil)
 }
