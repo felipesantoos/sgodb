@@ -6,33 +6,38 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ index . 0 }}</title>
+    {{ template "Style" }}
 </head>
 <body>
-    <div id="form-create-table">
-        <form method="POST" action="create-table">
-            <input type="hidden" name="db" value="{{ index . 0 }}">
-            Nome da tabela: <input type="text" name="table-name">
-            <input type="submit" value="Cadastrar">
-        </form>
-    </div><br>
-    <table id="{{ index . 0 }}" border="1">
-        <thead>
-            <tr>
-                <th>Tabelas</th>
-                <th colspan="4">Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{ range index . 1 }}
-            <tr id="{{ .Name }}">
-                <td>{{ .Name }}</td>
-                <td style="text-align: center;">
-                    <span onclick="dropTable(this)" style="cursor: pointer;">🗑️</span>
-                </td>
-            </tr>
-            {{ end }}
-        </tbody>
-    </table>
+    <div id="main">
+        <div id="form-create-table">
+            <form method="POST" action="create-table">
+                <input type="hidden" name="db" value="{{ index . 0 }}">
+                Nome da tabela: <input type="text" name="table-name">
+                <input type="submit" value="Cadastrar">
+            </form>
+        </div><br>
+        <div id="table-created-tables">
+            <table id="{{ index . 0 }}" border="1">
+                <thead>
+                    <tr>
+                        <th>Tabelas</th>
+                        <th colspan="4">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range index . 1 }}
+                    <tr id="{{ .Name }}">
+                        <td><a href="table?table={{ .Name }}">{{ .Name }}</a></td>
+                        <td style="text-align: center;">
+                            <span onclick="dropTable(this)" style="cursor: pointer;">🗑️</span>
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 <script>
     function dropTable(el) {

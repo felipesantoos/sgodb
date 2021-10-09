@@ -23,6 +23,16 @@ type Table struct {
 	Name string
 }
 
+// Estrutura de descrição das tabelas.
+type Desc struct {
+	Field   string
+	Type    string
+	Null    string
+	Key     string
+	Default string
+	Extra   string
+}
+
 var IsValid = regexp.MustCompile(`^[a-zA-Z0-9_]+$`).MatchString
 
 // Conexão com o BD.
@@ -217,6 +227,90 @@ func DropTable(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 }
 
+func UseTable(w http.ResponseWriter, r *http.Request) {
+	// Abre a conexão.
+	db := dbConn()
+	// Pega o nome da tabela da URL.
+	tableName := r.URL.Query().Get("table")
+	// Consulta as tabelas no banco de dados.
+	selDB, err := db.Query("DESC " + tableName)
+	// Verifica se houve erros.
+	if err != nil {
+		panic(err.Error())
+	}
+	// Struct de descrição de um campo.
+	desc := Desc{}
+	// Array de campos.
+	fields := []Desc{}
+	// Percorre os registros retornados pelo banco.
+	for selDB.Next() {
+		// Variáveis que vão armazenar os valores como string.
+		var f, t, n, k, d, e string
+		// Variáveis auxiliares para a verificação de valores nulos.
+		var nsf, nst, nsn, nsk, nsd, nse sql.NullString
+
+		// Faz o Scan do DESC.
+		err = selDB.Scan(&nsf, &nst, &nsn, &nsk, &nsd, &nse)
+		// Verifica se houve erros.
+		if err != nil {
+			panic(err.Error())
+		}
+
+		// Verifica a validade do campo field.
+		if nsf.Valid {
+			f = nsf.String
+		} else {
+			f = "null"
+		}
+
+		// Verifica a validade do campo type.
+		if nst.Valid {
+			t = nst.String
+		} else {
+			t = "null"
+		}
+
+		// Verifica a validade do campo null.
+		if nsn.Valid {
+			n = nsn.String
+		} else {
+			n = "null"
+		}
+
+		// Verifica a validade do campo key.
+		if nsk.Valid {
+			k = nsk.String
+		} else {
+			k = "null"
+		}
+
+		// Verifica a validade do campo default.
+		if nsd.Valid {
+			d = nsd.String
+		} else {
+			d = "null"
+		}
+
+		// Verifica a validade do campo extra.
+		if nse.Valid {
+			e = nse.String
+		} else {
+			e = "null"
+		}
+
+		// Preenche a struct.
+		desc.Field = f
+		desc.Type = t
+		desc.Null = n
+		desc.Key = k
+		desc.Default = d
+		desc.Extra = e
+
+		// Adiciona a struc no array.
+		fields = append(fields, desc)
+	}
+}
+
 func main() {
 	// Informa que o servidor está no ar.
 	log.Println("Server started on: http://localhost:8080")
@@ -234,7 +328,9 @@ func main() {
 	http.HandleFunc("/create-table", CreateTable)
 	// A URL localhost:8080/drop-table executa a função DropTable.
 	http.HandleFunc("/drop-table", DropTable)
+	// A URL localhost:8080/table executa a função Table.
+	http.HandleFunc("/table", UseTable)
 
 	// Inicia o servidor.
-	http.ListenAndServe("localhost:9015", nil)
+	http.ListenAndServe("localhost:8000", nil)
 }
